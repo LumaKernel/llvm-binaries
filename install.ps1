@@ -1,5 +1,9 @@
 
+<<<<<<< Updated upstream
 Param([parameter(mandatory=$true)]$version, [switch]$x64)
+=======
+Param([parameter(mandatory=$true)][string]$version, [switch]$x64)
+>>>>>>> Stashed changes
 
 cd $PSScriptRoot
 
