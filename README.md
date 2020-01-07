@@ -16,15 +16,32 @@
 
 # ビルド手順
 
+準備
 
 ```powershell
+scoop install gcc cmake ninja
+```
+
+
+```powershell
+git checkout master
 git checkout -b build
-git checkout master -- install.ps1
-./install.ps1
+./install.ps1 <version> [-x64]
 
 # 成功したら
 git checkout -b <branch name>
 git branch -d build
+rm .tmp -Recurse
+rm install.ps1 -Recurse
+git add .
+git commit -m "built"
 ```
 
+
+アーキテクチャのチェック
+
+```bash
+# MSYS2 とか WSL で
+file ./bin/clang-cl.exe
+```
 
