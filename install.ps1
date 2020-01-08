@@ -1,28 +1,48 @@
 
-Param([parameter(mandatory=$true)][string]$version, [switch]$x64)
+Param([parameter(mandatory)][string]$version, $dest="build")
 
-cd $PSScriptRoot
-
-if (-not Test-Path install.ps1) {
+if ( Test-Path "$dest" ) {
+  Write-Error "$dest already exists"
   exit 1
 }
 
-if (Test-Path .tmp) {
-  rm .tmp -Recurse -Force
-  rm * -Exclude install.ps1 -Recurse
-}
+pushd $PSScriptRoot
+  if ( -not (Test-Path install.ps1) ) {
+    exit 1
+  }
 
-git clone https://github.com/llvm/llvm-project.git ./.tmp/llvm-project --branch "llvmorg-$version"
+  if ( -not (Test-Path .tmp/llvm-project) ) {
+    git clone https://github.com/llvm/llvm-project.git ./.tmp/llvm-project
+  }
 
-cp ./.tmp/llvm-project/llvm/LICENSE.TXT .
+  pushd .tmp/llvm-project
+    git reset --hard
+    git clean -fdx
+    git checkout "llvmorg-$version"
+    if ($? -ne $True) {
+      write-Error "checking-out to version $version (branch `"llvmorg-$version`") was failed!"
+      exit 1
+    }
+  popd
+popd
 
-$cflags="-m32"
-$cxxflags="-m32"
-if ($x64 -eq \"64bit\") {
-  $cflags="-m64"
-  $cxxflags="-m64"
-}
+mkdir $dest
 
-cmake -GNinja -B. "./.tmp/llvm/llvm-project/llvm" -DCMAKE_C_COMPILER=gcc -DCMAKE_CXX_COMPILER=g++ -DLLVM_ENABLE_PROJECTS=clang;lld; -DLLVM_TARGETS_TO_BUILD=X86 -DCMAKE_BUILD_TYPE=Release "-DCMAKE_C_FLAGS=$cflags" "-DCMAKE_CXX_FLAGS=$cxxflags"
-ninja
+pushd $dest
+  cp "$PSScriptRoot/.tmp/llvm-project/llvm/LICENSE.TXT" . -Force
+
+  $stopwatch = [Diagnostics.Stopwatch]::StartNew()
+
+  cmake -GNinja -B. "$PSScriptRoot/.tmp/llvm-project/llvm" -DCMAKE_C_COMPILER=gcc -DCMAKE_CXX_COMPILER=g++ "-DLLVM_ENABLE_PROJECTS=clang;lld;" -DLLVM_TARGETS_TO_BUILD=X86 -DCMAKE_BUILD_TYPE=Release
+  ninja
+
+  $stopwatch.Stop()
+  $elapsedSec = [int]($stopwatch.Elapsed)
+  $elapsedMin = [int]($elapsedSec / 60)
+  $elapsedHour = [int]($elapsedMin / 60)
+  $elapsedSec %= 60
+  $elapsedMin %= 60
+
+  echo "build time : $elapsedHour hr $elapsedMin min $elapsedSec sec"
+popd
 

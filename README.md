@@ -11,37 +11,48 @@
 ということなので，`llvm/LICENSE.txt` のコピーさえ忘れなければ大丈夫そう
 
 
-なお，このREADME含め，master ブランチに関しては WTFPL にします．
-
+なお，このREADME，install.ps1 は [WTFPL](http://www.wtfpl.net/) にします．
 
 # ビルド手順
 
 準備
 
 ```powershell
-scoop install gcc cmake ninja
+scoop install git gcc cmake ninja
 ```
+
+clone とかはスクリプトがやってくれる．
+VSCommunity を(おそらく)必要としないものだが，
+`clgan;lld;` しかビルドしない．公式のに近いものをビルドするなら，
+VSCommunityを用意してビルドする必要がありそう．
+まあ用意してもいいけど，`scoop` で提供された VSCommunity のいいバケットが見つかるまでいいかな，ということで
+(ビルドは時間がかかってたいへん)
 
 
 ```powershell
-git checkout master
-git checkout -b build
-./install.ps1 <version> [-x64]
+# scoop のパスを一番手前に ぶっこむなら
+# $env:Path = "C:\ProgramData\scoop\shims;$env:UserProfile\scoop\shims;$env:Path"
 
-# 成功したら
-git checkout -b <branch name>
-git branch -d build
-rm .tmp -Recurse
-rm install.ps1 -Recurse
-git add .
-git commit -m "built"
+rmdir build -Recurse -Force
+./install.ps1 -version 9.0.1 -dest build
+
+# 成功したら build をリリース
 ```
+
+ビルド目安時間 : 
 
 
 アーキテクチャのチェック
 
 ```bash
 # MSYS2 とか WSL で
-file ./bin/clang-cl.exe
+file ./build/bin/clang-cl.exe
+```
+
+
+32 bit版の gcc を入れたら 32bit 版も手に入るんじゃないかなあおそらく
+
+```powershell
+scoop install gcc -a 32bit
 ```
 
