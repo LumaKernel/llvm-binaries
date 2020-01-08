@@ -1,4 +1,6 @@
 
+[llvm/llvm-project](https://github.com/llvm/llvm-project) をビルドする
+
 自分の scoop bucket 用にバイナリを用意．なので Windows の分のバイナリしかないよ
 
 
@@ -34,7 +36,7 @@ VSCommunityを用意してビルドする必要がありそう．
 # $env:Path = "C:\ProgramData\scoop\shims;$env:UserProfile\scoop\shims;$env:Path"
 
 rmdir build -Recurse -Force
-./install.ps1 -version 9.0.1 -dest build
+./install.ps1 -version 9.0.1 -dest build -projects "clang;lld;"
 
 # 成功したら build をリリース
 ```
@@ -55,4 +57,9 @@ file ./build/bin/clang-cl.exe
 ```powershell
 scoop install gcc -a 32bit
 ```
+
+---
+
+[ajkhoury/LLVM-Build-Windows](https://github.com/ajkhoury/LLVM-Build-Windows) も参考になるかもしれない．
+MSVCかClang，それとMSYSでビルドするためのバッチらしい?
 
