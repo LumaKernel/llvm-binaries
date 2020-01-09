@@ -64,7 +64,6 @@ $tmpdir = Make-Tmp
 
 pushd $PSScriptRoot
   if ( -not (Test-Path install.ps1) ) {
-    Revert-Env-Path
     Throw "Cannot find install.ps1 itself"
   }
 popd
@@ -96,52 +95,52 @@ function Check-VS-Compiler {
     }
   }
 
-  Revert-Env-Path
   Throw "Not found executable `"cl`""
 }
 
 Check-VS-Compiler
 
-git clone https://github.com/llvm/llvm-project.git "$tmpdir/llvm-project"
+try {
 
-pushd "$tmpdir/llvm-project"
-  git reset --hard
-  git clean -fdx
-  git checkout "llvmorg-$version"
-  if ($? -ne $True) {
+  git clone https://github.com/llvm/llvm-project.git "$tmpdir/llvm-project"
+
+  pushd "$tmpdir/llvm-project"
+    git reset --hard
+    git clean -fdx
+    git checkout "llvmorg-$version"
+    if ($? -ne $True) {
+      Clear-Tmp
+      Throw "checking-out to version $version (branch `"llvmorg-$version`") was failed!"
+    }
+  popd
+
+  if ( Test-Path $dest ) {
     Clear-Tmp
-    Revert-Env-Path
-    Throw "checking-out to version $version (branch `"llvmorg-$version`") was failed!"
+    Throw "$dest cannot be used as a destination"
   }
-popd
 
-if ( Test-Path $dest ) {
-  Clear-Tmp
+  mkdir $dest
+
+  pushd $dest
+    cp "$tmpdir/llvm-project/llvm/LICENSE.TXT" . -Force
+
+    Timer-Start
+
+    cmake -GNinja "-B." "$tmpdir/llvm-project/llvm" -DCMAKE_C_COMPILER=cl -DCMAKE_CXX_COMPILER=cl "-DLLVM_ENABLE_PROJECTS=$projects" -DLLVM_TARGETS_TO_BUILD=X86 -DCMAKE_BUILD_TYPE=Release
+    if (-not $?) {
+      Throw "CMake was failed!"
+    }
+    ninja
+    if (-not $?) {
+      Throw "Ninja was failed!"
+    }
+
+    Timer-Stop-Show
+  popd
+
+} finally {
   Revert-Env-Path
-  Throw "$dest cannot be used as a destination"
 }
 
-mkdir $dest
-
-pushd $dest
-  cp "$tmpdir/llvm-project/llvm/LICENSE.TXT" . -Force
-
-  Timer-Start
-
-  cmake -GNinja "-B." "$tmpdir/llvm-project/llvm" -DCMAKE_C_COMPILER=cl -DCMAKE_CXX_COMPILER=cl "-DLLVM_ENABLE_PROJECTS=$projects" -DLLVM_TARGETS_TO_BUILD=X86 -DCMAKE_BUILD_TYPE=Release
-  if (-not $?) {
-    Revert-Env-Path
-    Throw "CMake was failed!"
-  }
-  ninja
-  if (-not $?) {
-    Revert-Env-Path
-    Throw "Ninja was failed!"
-  }
-
-  Timer-Stop-Show
-popd
-
 Clear-Tmp
-Revert-Env-Path
 
