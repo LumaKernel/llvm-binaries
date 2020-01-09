@@ -44,13 +44,13 @@ function Timer-Start {
 
 function Timer-Stop-Show {
   $script:stopwatch.Stop()
-  $script:elapsedSec = [int]($stopwatch.Elapsed)
-  $script:elapsedMin = [int]($elapsedSec / 60)
-  $script:elapsedHour = [int]($elapsedMin / 60)
-  $script:elapsedSec %= 60
-  $script:elapsedMin %= 60
+  $elapsedSec = [int]($script:stopwatch.Elapsed.TotalSeconds)
+  $elapsedMin = [int]($elapsedSec / 60)
+  $elapsedHour = [int]($elapsedMin / 60)
+  $elapsedSec %= 60
+  $elapsedMin %= 60
 
-  echo "build time : $elapsedHour hr $elapsedMin min $elapsedSec sec"
+  echo "total time : $elapsedHour hr $elapsedMin min $elapsedSec sec"
 }
 
 
@@ -74,11 +74,15 @@ function Check-VS-Compiler {
       "C:\Program Files\Microsoft Visual Studio\$_\Community\VC\Auxiliary\Build\vcvars$arch.bat"
     })
 
-  foreach ($target in $tryTargets ) {
+  foreach ( $target in $tryTargets ) {
     if (Test-Path $target) {
       if ( (Get-Item $target) -isnot [System.IO.DirectoryInfo] ) {
         echo "VS setting file: $target"
-        echo "@echo off`ncall `"$target`"`npowershell $tmpdir\powershell-util\Dump-Env.ps1 -File env.txt" |
+        echo $(@(
+            "@echo off"
+            "call `"$target`""
+            "powershell powershell-util\Dump-Env.ps1 -File env.txt"
+          ) -join `n) |
           Out-String |
           % { [Text.Encoding]::UTF8.GetBytes($_) } |
           Set-Content -Path "$tmpdir/setenv.bat" -Encoding Byte
@@ -98,6 +102,8 @@ function Check-VS-Compiler {
 }
 
 try {
+  Timer-Start
+
   git clone https://github.com/LumaKernel/PowerShell-utils.git "$tmpdir/powershell-util"
 
   git clone https://github.com/llvm/llvm-project.git "$tmpdir/llvm-project"
@@ -126,8 +132,6 @@ try {
   pushd $dest
     cp "$tmpdir/llvm-project/llvm/LICENSE.TXT" . -Force
 
-    Timer-Start
-
     cmake -GNinja "-B." "$tmpdir/llvm-project/llvm" -DCMAKE_C_COMPILER=cl -DCMAKE_CXX_COMPILER=cl "-DLLVM_ENABLE_PROJECTS=$projects" -DLLVM_TARGETS_TO_BUILD=X86 -DCMAKE_BUILD_TYPE=Release
     if (-not $?) {
       Throw "CMake was failed!"
@@ -137,9 +141,9 @@ try {
       Throw "Ninja was failed!"
     }
 
-    Timer-Stop-Show
   popd
-
+  
+  Timer-Stop-Show
 } finally {
   &"$tmpdir/powershell-util/Revert-Env.ps1" $script:env_saved
 }
