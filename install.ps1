@@ -94,9 +94,9 @@ function Check-VS-Compiler {
 
 Check-VS-Compiler
 
+git clone https://github.com/llvm/llvm-project.git "$tmpdir/llvm-project"
 
 pushd "$tmpdir/llvm-project"
-  git clone https://github.com/llvm/llvm-project.git .
   git reset --hard
   git clean -fdx
   git checkout "llvmorg-$version"
