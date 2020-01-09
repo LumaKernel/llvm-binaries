@@ -53,11 +53,18 @@ function Timer-Stop-Show {
   echo "build time : $elapsedHour hr $elapsedMin min $elapsedSec sec"
 }
 
+$script:Path = $env:Path
+
+function Revert-Env-Path {
+  $env:Path = $script:Path
+}
+
 
 $tmpdir = Make-Tmp
 
 pushd $PSScriptRoot
   if ( -not (Test-Path install.ps1) ) {
+    Revert-Env-Path
     Throw "Cannot find install.ps1 itself"
   }
 popd
@@ -89,6 +96,7 @@ function Check-VS-Compiler {
     }
   }
 
+  Revert-Env-Path
   Throw "Not found executable `"cl`""
 }
 
@@ -102,12 +110,14 @@ pushd "$tmpdir/llvm-project"
   git checkout "llvmorg-$version"
   if ($? -ne $True) {
     Clear-Tmp
+    Revert-Env-Path
     Throw "checking-out to version $version (branch `"llvmorg-$version`") was failed!"
   }
 popd
 
 if ( Test-Path $dest ) {
   Clear-Tmp
+  Revert-Env-Path
   Throw "$dest cannot be used as a destination"
 }
 
@@ -119,12 +129,19 @@ pushd $dest
   Timer-Start
 
   cmake -GNinja "-B." "$tmpdir/llvm-project/llvm" -DCMAKE_C_COMPILER=cl -DCMAKE_CXX_COMPILER=cl "-DLLVM_ENABLE_PROJECTS=$projects" -DLLVM_TARGETS_TO_BUILD=X86 -DCMAKE_BUILD_TYPE=Release
-  if (-not $?) { Throw "CMake was failed!" }
+  if (-not $?) {
+    Revert-Env-Path
+    Throw "CMake was failed!"
+  }
   ninja
-  if (-not $?) { Throw "Ninja was failed!" }
+  if (-not $?) {
+    Revert-Env-Path
+    Throw "Ninja was failed!"
+  }
 
   Timer-Stop-Show
 popd
 
 Clear-Tmp
+Revert-Env-Path
 
