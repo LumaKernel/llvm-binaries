@@ -83,7 +83,10 @@ function Check-VS-Compiler {
           % { [Text.Encoding]::UTF8.GetBytes($_) } |
           Set-Content -Path "$tmpdir/setenv.bat" -Encoding Byte
 
-        &"$tmpdir/setenv.bat"
+        pushd $tmpdir
+          ./setenv.bat
+        popd
+
         &"$tmpdir/powershell-util/Revert-Env.ps1" "$tmpdir/env.txt"
 
         if (Get-Command "cl" -ErrorAction SilentlyContinue) { return }
