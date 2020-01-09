@@ -53,12 +53,6 @@ function Timer-Stop-Show {
   echo "build time : $elapsedHour hr $elapsedMin min $elapsedSec sec"
 }
 
-$script:Path = $env:Path
-
-function Revert-Env-Path {
-  $env:Path = $script:Path
-}
-
 
 $tmpdir = Make-Tmp
 
@@ -84,12 +78,14 @@ function Check-VS-Compiler {
     if (Test-Path $target) {
       if ( (Get-Item $target) -isnot [System.IO.DirectoryInfo] ) {
         echo "VS setting file: $target"
-        echo "@echo off`ncall `"$target`"`necho %Path%" `
-          | Out-String `
-          | % { [Text.Encoding]::UTF8.GetBytes($_) } `
-          | Set-Content -Path "$tmpdir/setenv.bat" -Encoding Byte
+        echo "@echo off`ncall `"$target`"`npowershell $tmpdir\powershell-util\Dump-Env.ps1 -File env.txt" |
+          Out-String |
+          % { [Text.Encoding]::UTF8.GetBytes($_) } |
+          Set-Content -Path "$tmpdir/setenv.bat" -Encoding Byte
 
-        $env:Path = "$((&"$tmpdir/setenv.bat" -split `n)[-1]);$env:Path"
+        &"$tmpdir/setenv.bat"
+        &"$tmpdir/powershell-util/Revert-Env.ps1" "$tmpdir/env.txt"
+
         if (Get-Command "cl" -ErrorAction SilentlyContinue) { return }
       }
     }
@@ -98,11 +94,14 @@ function Check-VS-Compiler {
   Throw "Not found executable `"cl`""
 }
 
-Check-VS-Compiler
-
 try {
+  git clone https://github.com/LumaKernel/PowerShell-utils.git "$tmpdir/powershell-util"
 
   git clone https://github.com/llvm/llvm-project.git "$tmpdir/llvm-project"
+
+  $script:env_saved = &"$tmpdir/powershell-util/Dump-Env.ps1"
+
+  Check-VS-Compiler
 
   pushd "$tmpdir/llvm-project"
     git reset --hard
@@ -139,7 +138,7 @@ try {
   popd
 
 } finally {
-  Revert-Env-Path
+  &"$tmpdir/powershell-util/Revert-Env.ps1" $script:env_saved
 }
 
 Clear-Tmp
