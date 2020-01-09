@@ -13,23 +13,35 @@
 ということなので，`llvm/LICENSE.txt` のコピーさえ忘れなければ大丈夫そう
 
 
-なお，このREADME，install.ps1 は [WTFPL](http://www.wtfpl.net/) にします．
+このREADME，install.ps1 は [WTFPL](http://www.wtfpl.net/) にします．
 
 # ビルド手順
 
 準備
 
 ```powershell
-scoop install git gcc cmake ninja
+scoop install git cmake ninja
 ```
 
-clone とかはスクリプトがやってくれる．
-VSCommunity を(おそらく)必要としないものだが，
-`clgan;lld;` しかビルドしない．公式のに近いものをビルドするなら，
-VSCommunityを用意してビルドする必要がありそう．
-まあ用意してもいいけど，`scoop` で提供された VSCommunity のいいバケットが見つかるまでいいかな，ということで
-(ビルドは時間がかかってたいへん)
+加えて MSVC が必要， [VSCommunity2019](https://docs.microsoft.com/en-us/visualstudio/releases/2019/release-notes-history?view=vs-2019) や [VSCommunity2017](https://docs.microsoft.com/en-us/visualstudio/releases/2019/release-notes-history?view=vs-2019) をそのままインストールすると，勝手にパスを取りに行く．
 
+
+scoop で入れられるようにしたかったけど，その場合パスを通してあげるようにしたほうがいいのかどうか悩ましくなってしまったので今回は一応…
+
+
+もし cl コンパイラが見つからないと言われたら，
+
+```powershell
+# powershell
+cmd /c <MSVCのパス>/Community\VC\Auxiliary\Build\vcvars64.bat && powershell
+```
+
+みたいな感じで実行した後で install.ps1 スクリプトをたたけばいい
+
+この公式のパスぶっこみバッチファイルは，そのプロセスでの一時的なもの．
+
+
+clone とかは install.ps1 スクリプトがやってくれる．
 
 ```powershell
 # scoop のパスを一番手前に ぶっこむなら
@@ -51,12 +63,6 @@ rmdir build -Recurse -Force
 file ./build/bin/clang-cl.exe
 ```
 
-
-32 bit版の gcc を入れたら 32bit 版も手に入るんじゃないかなあおそらく
-
-```powershell
-scoop install gcc -a 32bit
-```
 
 ---
 
