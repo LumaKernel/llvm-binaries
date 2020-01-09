@@ -11,7 +11,9 @@ Param(
 
   $dest="build",
 
-  $projects="all"
+  $projects="all",
+
+  [switch]$indepent
 )
 
 if ( Test-Path $dest ) {
@@ -31,7 +33,7 @@ function Make-Tmp {
     popd
   } | Out-Null
  
-  return "$PSScriptRoot/.tmp/$timestamp"
+  return "$PSScriptRoot/.tmp/$timestamp", "$PSScriptRoot/.tmp/shared"
 }
 
 function Clear-Tmp {
@@ -54,7 +56,7 @@ function Timer-Stop-Show {
 }
 
 
-$tmpdir = Make-Tmp
+$tmpdir, $shared_tmpdir = Make-Tmp
 
 pushd $PSScriptRoot
   if ( -not (Test-Path install.ps1) ) {
@@ -82,7 +84,7 @@ function Check-VS-Compiler {
             "@echo off"
             "call `"$target`""
             "powershell powershell-util\Dump-Env.ps1 -File env.txt"
-          ) -join `n) |
+          ) -join "`n") |
           Out-String |
           % { [Text.Encoding]::UTF8.GetBytes($_) } |
           Set-Content -Path "$tmpdir/setenv.bat" -Encoding Byte
@@ -104,15 +106,24 @@ function Check-VS-Compiler {
 try {
   Timer-Start
 
+
   git clone https://github.com/LumaKernel/PowerShell-utils.git "$tmpdir/powershell-util"
 
-  git clone https://github.com/llvm/llvm-project.git "$tmpdir/llvm-project"
+  if ($indepent) {
+    $llvm_dir = "$tmpdir/llvm-project"
+  } else {
+    $llvm_dir = "$shared_tmpdir/llvm-project"
+  }
+
+  if ( -not (Test-Path $llvm_dir) ) {
+    git clone https://github.com/llvm/llvm-project.git $llvm_dir
+  }
 
   $script:env_saved = &"$tmpdir/powershell-util/Dump-Env.ps1"
 
   Check-VS-Compiler
 
-  pushd "$tmpdir/llvm-project"
+  pushd $llvm_dir
     git reset --hard
     git clean -fdx
     git checkout "llvmorg-$version"
