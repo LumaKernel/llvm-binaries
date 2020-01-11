@@ -27,12 +27,12 @@ function Make-Tmp {
   &{
     pushd $psscriptroot
       if ( test-path "./.tmp/$timestamp" ) {
-        throw "failed to make temporally directory"
+        throw "Failed to make temporally directory"
       }
       mkdir "./.tmp/$timestamp"
     popd
   } | Out-Null
- 
+
   return "$PSScriptRoot/.tmp/$timestamp", "$PSScriptRoot/.tmp/shared"
 }
 
@@ -70,10 +70,7 @@ function Check-VS-Compiler {
 
   $tryTargets =
     ($vs_versions | %{
-      "C:\Program Files (x86)\Microsoft Visual Studio\$_\Community\VC\Auxiliary\Build\vcvars$arch.bat"
-    }) +
-    ($vs_versions | %{
-      "C:\Program Files\Microsoft Visual Studio\$_\Community\VC\Auxiliary\Build\vcvars$arch.bat"
+      "C:\Program Files (x86)\Microsoft Visual Studio\$_\Community\Common7\Tools\VsDevCmd.bat"
     })
 
   foreach ( $target in $tryTargets ) {
@@ -93,19 +90,19 @@ function Check-VS-Compiler {
           ./setenv.bat
         popd
 
-        &"$tmpdir/powershell-util/Revert-Env.ps1" "$tmpdir/env.txt"
+        &"$tmpdir/powershell-util/Revert-Env.ps1" -File "$tmpdir/env.txt"
 
         if (Get-Command "cl" -ErrorAction SilentlyContinue) { return }
       }
     }
   }
 
+  Clear-Tmp
   Throw "Not found executable `"cl`""
 }
 
 try {
   Timer-Start
-
 
   git clone https://github.com/LumaKernel/PowerShell-utils.git "$tmpdir/powershell-util"
 
@@ -127,7 +124,7 @@ try {
     git reset --hard
     git clean -fdx
     git checkout "llvmorg-$version"
-    if ($? -ne $True) {
+    if ($LASTEXITCODE) {
       Clear-Tmp
       Throw "checking-out to version $version (branch `"llvmorg-$version`") was failed!"
     }
@@ -141,22 +138,24 @@ try {
   mkdir $dest
 
   pushd $dest
-    cp "$tmpdir/llvm-project/llvm/LICENSE.TXT" . -Force
+    cp "$llvm_dir/llvm/LICENSE.TXT" . -Force
 
-    cmake -GNinja "-B." "$tmpdir/llvm-project/llvm" -DCMAKE_C_COMPILER=cl -DCMAKE_CXX_COMPILER=cl "-DLLVM_ENABLE_PROJECTS=$projects" -DLLVM_TARGETS_TO_BUILD=X86 -DCMAKE_BUILD_TYPE=Release
-    if (-not $?) {
+    cmake -GNinja "-B." "$llvm_dir/llvm" -DCMAKE_C_COMPILER=cl -DCMAKE_CXX_COMPILER=cl "-DLLVM_ENABLE_PROJECTS=$projects" -DLLVM_TARGETS_TO_BUILD=X86 -DCMAKE_BUILD_TYPE=Release
+    if ($LASTEXITCODE) {
       Throw "CMake was failed!"
     }
     ninja
-    if (-not $?) {
+    if ($LASTEXITCODE) {
       Throw "Ninja was failed!"
     }
 
   popd
-  
+
   Timer-Stop-Show
 } finally {
-  &"$tmpdir/powershell-util/Revert-Env.ps1" $script:env_saved
+  if (Test-Path "$tmpdir/powershell-util/Revert-Env.ps1") {
+    &"$tmpdir/powershell-util/Revert-Env.ps1" $script:env_saved
+  }
 }
 
 Clear-Tmp

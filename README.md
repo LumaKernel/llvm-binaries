@@ -48,7 +48,8 @@ clone とかは install.ps1 スクリプトがやってくれる．
 # $env:Path = "C:\ProgramData\scoop\shims;$env:UserProfile\scoop\shims;$env:Path"
 
 rmdir build -Recurse -Force
-./install.ps1 -version 9.0.1 -dest build -projects "clang;lld;"
+./install.ps1 -version 9.0.1 -dest build -arch 64
+# 複数同時にビルドするなら， -dest は別にして， -indepent フラグを使う
 
 # 成功したら build をリリース
 ```
