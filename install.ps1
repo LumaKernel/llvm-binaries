@@ -140,6 +140,8 @@ try {
   pushd $dest
     cp "$llvm_dir/llvm/LICENSE.TXT" . -Force
 
+    $archName = if ($arch -eq "64") { "x64" } else { "Win32" }
+
     cmake -G "Visual Studio 16 2019" -A $archName -S "$llvm_dir/llvm" -DCMAKE_C_COMPILER=cl -DCMAKE_CXX_COMPILER=cl "-DLLVM_ENABLE_PROJECTS=$projects" -DLLVM_TARGETS_TO_BUILD=X86 -DCMAKE_BUILD_TYPE=Release "-B."
     if ($LASTEXITCODE) {
       Throw "CMake was failed!"
