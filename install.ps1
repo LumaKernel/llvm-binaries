@@ -143,15 +143,15 @@ try {
   $dest_rel = $dest
   $dest = Resolve-Path $dest
 
-  pushd "$llvm_dir/llvm"
+  pushd $dest
   try {
-    cp "LICENSE.TXT" $dest -Force
+    cp "$llvm_dir\llvm\LICENSE.TXT" $dest -Force
 
-    cmake -GNinja "-B" $dest "-H." -DCMAKE_C_COMPILER=cl -DCMAKE_CXX_COMPILER=cl "-DLLVM_ENABLE_PROJECTS=$projects" -DLLVM_TARGETS_TO_BUILD=X86 -DCMAKE_BUILD_TYPE=Release
+    cmake -GNinja "-B." "$llvm_dir\llvm" -DCMAKE_C_COMPILER=cl -DCMAKE_CXX_COMPILER=cl "-DLLVM_ENABLE_PROJECTS=$projects" -DLLVM_TARGETS_TO_BUILD=X86 -DCMAKE_BUILD_TYPE=Release
     if ($LASTEXITCODE) {
       Throw "CMake was failed!"
     }
-    ninja -C $dest
+    ninja
     if ($LASTEXITCODE) {
       Throw "Ninja was failed!"
     }
