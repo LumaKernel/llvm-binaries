@@ -70,8 +70,11 @@ function Check-VS-Compiler {
 
   $tryTargets =
     ($vs_versions | %{
-      "C:\Program Files (x86)\Microsoft Visual Studio\$_\Community\Common7\Tools\VsDevCmd.bat"
+      "C:\Program Files (x86)\Microsoft Visual Studio\$_\Community\VC\Auxiliary\Build\vcvarsx86_amd64.bat"
     })
+    # ($vs_versions | %{
+    #   "C:\Program Files (x86)\Microsoft Visual Studio\$_\Community\Common7\Tools\VsDevCmd.bat"
+    # })
 
   foreach ( $target in $tryTargets ) {
     if (Test-Path $target) {

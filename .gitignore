@@ -1,4 +1,6 @@
 .tmp/
 build/
+build64/
+build32/
 *.zip
 
