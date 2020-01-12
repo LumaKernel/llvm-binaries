@@ -66,7 +66,7 @@ popd
 
 function Check-VS-Compiler {
   if (Get-Command "cl" -ErrorAction SilentlyContinue) { return }
-  $vs_versions = "2019", "2017"
+  $vs_versions = "2019"
 
   $tryTargets =
     ($vs_versions | %{
@@ -98,7 +98,7 @@ function Check-VS-Compiler {
   }
 
   Clear-Tmp
-  Throw "Not found executable `"cl`""
+  Throw "Not found executable VS2019Community's `"cl`""
 }
 
 try {
@@ -140,13 +140,13 @@ try {
   pushd $dest
     cp "$llvm_dir/llvm/LICENSE.TXT" . -Force
 
-    cmake -GNinja "-B." "$llvm_dir/llvm" -DCMAKE_C_COMPILER=cl -DCMAKE_CXX_COMPILER=cl "-DLLVM_ENABLE_PROJECTS=$projects" -DLLVM_TARGETS_TO_BUILD=X86 -DCMAKE_BUILD_TYPE=Release
+    cmake -G "Visual Studio 16 2019" -A $archName -S "$llvm_dir/llvm" -DCMAKE_C_COMPILER=cl -DCMAKE_CXX_COMPILER=cl "-DLLVM_ENABLE_PROJECTS=$projects" -DLLVM_TARGETS_TO_BUILD=X86 -DCMAKE_BUILD_TYPE=Release "-B."
     if ($LASTEXITCODE) {
       Throw "CMake was failed!"
     }
-    ninja
+    cmake --build "." --config Release
     if ($LASTEXITCODE) {
-      Throw "Ninja was failed!"
+      Throw "Build was failed!"
     }
 
   popd
