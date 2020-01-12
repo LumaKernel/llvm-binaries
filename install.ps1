@@ -140,19 +140,22 @@ try {
 
   mkdir $dest
 
-  pushd $dest
-    cp "$llvm_dir/llvm/LICENSE.TXT" . -Force
+  $dest_rel = $dest
+  $dest = Resolve-Path $dest
 
-    cmake -GNinja "-B." "$llvm_dir/llvm" -DCMAKE_C_COMPILER=cl -DCMAKE_CXX_COMPILER=cl "-DLLVM_ENABLE_PROJECTS=$projects" -DLLVM_TARGETS_TO_BUILD=X86 -DCMAKE_BUILD_TYPE=Release
+  pushd "$llvm_dir/llvm"
+  try {
+    cp "LICENSE.TXT" $dest -Force
+
+    cmake -GNinja "-B" $dest "-H." -DCMAKE_C_COMPILER=cl -DCMAKE_CXX_COMPILER=cl "-DLLVM_ENABLE_PROJECTS=$projects" -DLLVM_TARGETS_TO_BUILD=X86 -DCMAKE_BUILD_TYPE=Release
     if ($LASTEXITCODE) {
       Throw "CMake was failed!"
     }
-    ninja
+    ninja -C $dest
     if ($LASTEXITCODE) {
       Throw "Ninja was failed!"
     }
-
-  popd
+  } finally { popd }
 
   Timer-Stop-Show
 } finally {
